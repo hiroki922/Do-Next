@@ -6,9 +6,16 @@ FastAPI + PostgreSQL + React + Docker Compose によるフルスタック タス
 
 - ユーザー認証（JWT）
 - Todo の CRUD（作成・一覧・更新・削除）
-- 優先度（高/中/低）・期限日の設定
-- タグ（複数付与可）
-- 検索・フィルター（キーワード・完了状態・優先度・タグ・期限）
+- **3段階ステータス**（未着手 / 進行中 / 完了）
+- 優先度（高/中/低）・期限日・繰り返し設定
+- タグ（複数付与可・カラー設定）
+- 検索・フィルター（キーワード・完了状態・優先度・タグ・期限切れ）
+- **カンバンボード**（ドラッグ&ドロップでステータス変更）
+- **カレンダービュー**（期限日・日本の祝日表示）
+- 統計ページ
+- サブタスク・コメント・添付ファイル
+- アーカイブ・一括操作
+- デスクトップ通知（期限アラート）
 
 ## 技術スタック
 
@@ -30,8 +37,8 @@ FastAPI + PostgreSQL + React + Docker Compose によるフルスタック タス
 ### 初回起動
 
 ```bash
-git clone <リポジトリURL>
-cd fastapi-app
+git clone https://github.com/hiroki922/Do-Next.git
+cd Do-Next
 docker compose up --build
 ```
 
@@ -62,8 +69,9 @@ docker compose up --build
 1. `http://localhost:3000` にアクセス
 2. 「新規登録」でアカウントを作成してログイン
 3. 「タグ管理」から任意のタグを作成
-4. タイトル・説明・優先度・期限・タグを指定して Todo を追加
-5. フィルターバーでキーワード検索や絞り込みが可能
+4. フィルターバーの「＋ 新規タスク」からタスクを作成
+5. 「ボード」タブでカンバンビューに切り替え、ドラッグ&ドロップでステータス変更
+6. 「カレンダー」タブで期限日・祝日を確認
 
 ## API エンドポイント
 
@@ -91,7 +99,6 @@ docker compose up --build
 | GET | /todos/{id} | 詳細取得 |
 | PATCH | /todos/{id} | 更新 |
 | DELETE | /todos/{id} | 削除 |
-| GET | /health | ヘルスチェック |
 
 ### GET /todos/ クエリパラメータ
 
@@ -100,8 +107,10 @@ docker compose up --build
 | q | string | タイトル・説明のキーワード検索 |
 | completed | boolean | 完了状態でフィルター |
 | priority | string | 優先度でフィルター（low/medium/high） |
+| status | string | ステータスでフィルター（todo/in_progress/done） |
 | tag_id | integer | タグIDでフィルター |
-| due_before | date | 指定日以前の期限でフィルター |
+| overdue | boolean | 期限切れのみ表示 |
+| archived | boolean | アーカイブ済みを含む |
 
 ## 環境変数
 
@@ -114,10 +123,10 @@ docker compose up --build
 ## ディレクトリ構成
 
 ```
-fastapi-app/
+Do-Next/
 ├── app/                  # FastAPI バックエンド
 │   ├── api/
-│   │   ├── routes/       # エンドポイント (auth, tags, todos)
+│   │   ├── routes/       # エンドポイント (auth, tags, todos, ...)
 │   │   └── schemas.py    # Pydantic スキーマ
 │   ├── core/
 │   │   ├── security.py   # JWT・パスワードハッシュ
@@ -130,8 +139,10 @@ fastapi-app/
 ├── frontend/             # React フロントエンド
 │   └── src/
 │       ├── App.jsx
+│       ├── App.css
 │       ├── api.js        # API クライアント
-│       └── auth.js       # JWT ヘルパー
+│       ├── auth.js       # JWT ヘルパー
+│       └── components/   # UI コンポーネント
 ├── docker-compose.yml
 ├── Dockerfile
 └── requirements.txt
