@@ -61,13 +61,13 @@ docker compose up --build
 
 ```bash
 # 依存インストール（初回のみ）
-pip install -r requirements-test.txt
+pip3 install -r requirements-test.txt
 
 # テスト実行
-pytest
+python3 -m pytest
 
 # カバレッジ付き
-pytest --cov=app
+python3 -m pytest --cov=app
 ```
 
 ### フロントエンド（Vitest）
