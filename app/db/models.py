@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import date, datetime
+from typing import List as TList, Optional
 
 from sqlalchemy import (
     BigInteger,
@@ -47,10 +50,10 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    tags: Mapped[list["Tag"]] = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
-    owned_lists: Mapped[list["List"]] = relationship("List", back_populates="owner", cascade="all, delete-orphan")
-    refresh_tokens: Mapped[list["RefreshToken"]] = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
-    member_lists: Mapped[list["List"]] = relationship("List", secondary=list_members, back_populates="members")
+    tags: Mapped[TList[Tag]] = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
+    owned_lists: Mapped[TList[List]] = relationship("List", back_populates="owner", cascade="all, delete-orphan")
+    refresh_tokens: Mapped[TList[RefreshToken]] = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+    member_lists: Mapped[TList[List]] = relationship("List", secondary=list_members, back_populates="members")
 
 
 # ---- リスト ----
@@ -63,9 +66,9 @@ class List(Base):
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    owner: Mapped["User"] = relationship("User", back_populates="owned_lists")
-    members: Mapped[list["User"]] = relationship("User", secondary=list_members, back_populates="member_lists")
-    todos: Mapped[list["Todo"]] = relationship("Todo", back_populates="list", cascade="all, delete-orphan")
+    owner: Mapped[User] = relationship("User", back_populates="owned_lists")
+    members: Mapped[TList[User]] = relationship("User", secondary=list_members, back_populates="member_lists")
+    todos: Mapped[TList[Todo]] = relationship("Todo", back_populates="list", cascade="all, delete-orphan")
 
 
 # ---- タグ ----
@@ -75,12 +78,12 @@ class Tag(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    color: Mapped[str | None] = mapped_column(String(7), nullable=True)  # e.g. "#3b82f6"
+    color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)  # e.g. "#3b82f6"
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    user: Mapped["User"] = relationship("User", back_populates="tags")
-    todos: Mapped[list["Todo"]] = relationship("Todo", secondary=todo_tags, back_populates="tags")
+    user: Mapped[User] = relationship("User", back_populates="tags")
+    todos: Mapped[TList[Todo]] = relationship("Todo", secondary=todo_tags, back_populates="tags")
 
 
 # ---- Todo ----
@@ -90,8 +93,8 @@ class Todo(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     archived: Mapped[bool] = mapped_column(Boolean, default=False)
     priority: Mapped[str] = mapped_column(
@@ -99,34 +102,34 @@ class Todo(Base):
         default="medium",
         nullable=False,
     )
-    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    due_time: Mapped[str | None] = mapped_column(String(5), nullable=True)  # "HH:MM" 形式
+    due_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    due_time: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)  # "HH:MM" 形式
     recurrence: Mapped[str] = mapped_column(
         Enum("none", "daily", "weekly", "monthly", name="recurrence_enum"),
         default="none",
         nullable=False,
     )
-    recurrence_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    recurrence_end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(
         Enum("todo", "in_progress", "done", name="status_enum"),
         default="todo",
         nullable=False,
     )
-    position: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    assignee_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    assignee_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     list_id: Mapped[int] = mapped_column(Integer, ForeignKey("lists.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )
 
-    list: Mapped["List"] = relationship("List", back_populates="todos")
-    assignee: Mapped["User | None"] = relationship("User", foreign_keys=[assignee_id])
-    tags: Mapped[list["Tag"]] = relationship("Tag", secondary=todo_tags, back_populates="todos")
-    sub_tasks: Mapped[list["SubTask"]] = relationship("SubTask", back_populates="todo", cascade="all, delete-orphan")
-    attachments: Mapped[list["Attachment"]] = relationship("Attachment", back_populates="todo", cascade="all, delete-orphan")
-    comments: Mapped[list["Comment"]] = relationship("Comment", back_populates="todo", cascade="all, delete-orphan")
-    activity_logs: Mapped[list["ActivityLog"]] = relationship("ActivityLog", back_populates="todo", cascade="all, delete-orphan")
+    list: Mapped[List] = relationship("List", back_populates="todos")
+    assignee: Mapped[Optional[User]] = relationship("User", foreign_keys=[assignee_id])
+    tags: Mapped[TList[Tag]] = relationship("Tag", secondary=todo_tags, back_populates="todos")
+    sub_tasks: Mapped[TList[SubTask]] = relationship("SubTask", back_populates="todo", cascade="all, delete-orphan")
+    attachments: Mapped[TList[Attachment]] = relationship("Attachment", back_populates="todo", cascade="all, delete-orphan")
+    comments: Mapped[TList[Comment]] = relationship("Comment", back_populates="todo", cascade="all, delete-orphan")
+    activity_logs: Mapped[TList[ActivityLog]] = relationship("ActivityLog", back_populates="todo", cascade="all, delete-orphan")
 
 
 # ---- サブタスク ----
@@ -140,7 +143,7 @@ class SubTask(Base):
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    todo: Mapped["Todo"] = relationship("Todo", back_populates="sub_tasks")
+    todo: Mapped[Todo] = relationship("Todo", back_populates="sub_tasks")
 
 
 # ---- 添付ファイル ----
@@ -156,7 +159,7 @@ class Attachment(Base):
     size: Mapped[int] = mapped_column(BigInteger, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    todo: Mapped["Todo"] = relationship("Todo", back_populates="attachments")
+    todo: Mapped[Todo] = relationship("Todo", back_populates="attachments")
 
 
 # ---- コメント ----
@@ -170,8 +173,8 @@ class Comment(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    todo: Mapped["Todo"] = relationship("Todo", back_populates="comments")
-    user: Mapped["User"] = relationship("User")
+    todo: Mapped[Todo] = relationship("Todo", back_populates="comments")
+    user: Mapped[User] = relationship("User")
 
 
 # ---- アクティビティログ ----
@@ -183,11 +186,11 @@ class ActivityLog(Base):
     todo_id: Mapped[int] = mapped_column(Integer, ForeignKey("todos.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     action: Mapped[str] = mapped_column(String(50), nullable=False)  # "created","updated","completed","archived","commented"
-    detail: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    detail: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    todo: Mapped["Todo"] = relationship("Todo", back_populates="activity_logs")
-    user: Mapped["User"] = relationship("User")
+    todo: Mapped[Todo] = relationship("Todo", back_populates="activity_logs")
+    user: Mapped[User] = relationship("User")
 
 
 # ---- リフレッシュトークン ----
@@ -201,4 +204,4 @@ class RefreshToken(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
+    user: Mapped[User] = relationship("User", back_populates="refresh_tokens")

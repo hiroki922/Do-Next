@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import io
 import os
@@ -166,6 +168,7 @@ def list_todos(
     q: str | None = Query(None),
     completed: bool | None = Query(None),
     priority: str | None = Query(None),
+    status: str | None = Query(None),
     tag_id: int | None = Query(None),
     due_before: date | None = Query(None),
     overdue: bool | None = Query(None),
@@ -189,6 +192,8 @@ def list_todos(
         query = query.filter(Todo.completed == completed)
     if priority:
         query = query.filter(Todo.priority == priority)
+    if status:
+        query = query.filter(Todo.status == status)
     if tag_id is not None:
         query = query.filter(Todo.tags.any(Tag.id == tag_id))
     if due_before:

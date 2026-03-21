@@ -55,6 +55,36 @@ docker compose down -v
 docker compose up --build
 ```
 
+## テスト
+
+### バックエンド（pytest）
+
+```bash
+# 依存インストール（初回のみ）
+pip install -r requirements-test.txt
+
+# テスト実行
+pytest
+
+# カバレッジ付き
+pytest --cov=app
+```
+
+### フロントエンド（Vitest）
+
+```bash
+cd frontend
+
+# 依存インストール（初回のみ）
+npm install
+
+# テスト実行（1回）
+npm test
+
+# ウォッチモード（ファイル変更を検知して自動実行）
+npm run test:watch
+```
+
 ## アクセス先
 
 | サービス | URL |
